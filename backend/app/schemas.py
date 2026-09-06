@@ -1,5 +1,8 @@
 """Request/response schemas for the trajectory prediction API."""
 
+from datetime import date
+from typing import Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -34,3 +37,15 @@ class PredictionResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
+
+
+class Iceberg(BaseModel):
+    """A single normalized iceberg observation from the upstream ice centre."""
+
+    id: str = Field(..., description="Iceberg designator, e.g. 'A23A'")
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    length_nm: Optional[float] = Field(None, description="Length in nautical miles")
+    width_nm: Optional[float] = Field(None, description="Width in nautical miles")
+    last_updated: Optional[date] = Field(None, description="Observation/update date")
+    source: str = Field(..., description="Upstream source the record came from")

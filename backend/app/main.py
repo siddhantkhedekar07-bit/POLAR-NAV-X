@@ -5,8 +5,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 
+from app.iceberg_service import IcebergDataError, iceberg_service
 from app.model_service import ModelLoadError, model_service
-from app.schemas import HealthResponse, PredictionRequest, PredictionResponse
+from app.schemas import HealthResponse, Iceberg, PredictionRequest, PredictionResponse
 
 logger = logging.getLogger(__name__)
 
@@ -49,3 +50,18 @@ def predict(request: PredictionRequest):
         raise HTTPException(status_code=500, detail="Prediction failed")
 
     return PredictionResponse(predicted_latitude=latitude, predicted_longitude=longitude)
+
+
+@app.get("/api/icebergs", response_model=list[Iceberg])
+def icebergs():
+    """Latest available Antarctic iceberg observations from USNIC (BYU fallback)."""
+    try:
+        records = iceberg_service.get_icebergs()
+    except IcebergDataError:
+        logger.exception("Could not retrieve iceberg observations")
+        raise HTTPException(
+            status_code=503,
+            detail="Latest iceberg observations are currently unavailable upstream",
+        )
+
+    return [Iceberg(**record) for record in records]
